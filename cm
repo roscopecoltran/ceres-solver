@@ -1,0 +1,4 @@
+#!/bin/bash
+rm -fR ./_*
+cmake -H. -B_cmakeBuilds -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=`pwd`/_cmakeOutput
+cmake --build _cmakeBuilds --target install

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+CURRENT_WORKDIR=$(pwd)
+
+CURRENT_BUILD_PARALLEL_JOBS="3"
+CURRENT_BUILD_TOOLCHAIN="ios-10-2"
+CURRENT_BUILD_TYPE="Release"
+CURRENT_TESTS_OPENCV_EXTRA_MODULES_PATH="${CURRENT_WORKDIR}/../opencv_contrib"
+
+IOS_DEPLOYMENT_TARGET="8.0"
+MACOSX_DEPLOYMENT_TARGET="10.10"
+
+echo "CURRENT_WORKDIR: ${CURRENT_WORKDIR}"
+
+rm -fR ${CURRENT_WORKDIR}/_builds
+rm -fR ${CURRENT_WORKDIR}/_logs
+
+build.py  --toolchain=${CURRENT_BUILD_TOOLCHAIN} \
+          --config ${CURRENT_BUILD_TYPE} \
+          --jobs ${CURRENT_BUILD_PARALLEL_JOBS} \
+          --reconfig \
+          --clear \
+	  --install \
+          --fwd CMAKE_BUILD_TYPE=${CURRENT_BUILD_TYPE} \
+                HUNTER_CONFIGURATION_TYPES=${CURRENT_BUILD_TYPE}
