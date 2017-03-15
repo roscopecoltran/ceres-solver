@@ -244,6 +244,38 @@ else (BUILD_SHARED_LIBS)
   target_link_libraries(ceres ${CERES_LIBRARY_DEPENDENCIES})
 endif (BUILD_SHARED_LIBS)
 
+# link Eigen3 if target exists, otherwise use legacy variable
+# Eigen3Config.cmake introduced with Eigen 3.3.1
+if (TARGET Eigen3::Eigen)
+  target_link_libraries(ceres Eigen3::Eigen)
+else()
+  target_include_directories(ceres SYSTEM PRIVATE
+    $<BUILD_INTERFACE:${EIGEN3_INCLUDE_DIRS}>)
+endif()
+
+if (NOT MINIGLOG)
+  # link to glog for logging
+  if (TARGET glog::glog)
+    target_link_libraries(ceres glog::glog)
+  elseif (TARGET glog)
+    target_link_libraries(ceres glog)
+  else()
+    target_include_directories(ceres PRIVATE
+      $<BUILD_INTERFACE:${GLOG_INCLUDE_DIRS}>)
+  endif()
+endif(NOT MINIGLOG)
+
+# include directories just for ceres
+target_include_directories(ceres PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal/ceres>
+)
+# public include directories
+target_include_directories(ceres PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include> # to build ceres and tests
+  $<INSTALL_INTERFACE:include>                   # for exported install target
+)
+
 install(TARGETS ceres
         EXPORT  CeresExport
         RUNTIME DESTINATION bin

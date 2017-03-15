@@ -32,10 +32,17 @@
 cmake_minimum_required(VERSION 2.8.0)
 cmake_policy(VERSION 2.8)
 
+cmake_policy(SET CMP0053 NEW)
 cmake_policy(SET CMP0003 NEW)
 if (POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)
 endif()
+
+include(cmake/HunterGate.cmake)
+HunterGate(
+    URL "https://github.com/ruslo/hunter/archive/v0.18.15.tar.gz"
+    SHA1 "57991b41173c0e3c7501c7929cad8323277fab4c"
+)
 
 project(Ceres C CXX)
 
@@ -169,7 +176,7 @@ if (IOS)
   message(STATUS "Building Ceres for iOS platform: ${IOS_PLATFORM}")
 
   # Ceres requires at least iOS 7.0+.
-  if (IOS_DEPLOYMENT_TARGET VERSION_LESS 7.0)
+  if (IOS_SDK_VERSION VERSION_LESS 7.0)
     message(FATAL_ERROR "Unsupported iOS version: ${IOS_DEPLOYMENT_TARGET}, Ceres "
       "requires at least iOS version 7.0")
   endif()
@@ -194,15 +201,16 @@ endif (IOS)
 unset(CERES_COMPILE_OPTIONS)
 
 # Eigen.
-find_package(Eigen REQUIRED)
-if (EIGEN_FOUND)
-  if (EIGEN_VERSION VERSION_LESS 3.1.0)
+hunter_add_package(Eigen)
+find_package(Eigen3 REQUIRED)
+if (EIGEN3_FOUND)
+  if (EIGEN3_VERSION_STRING VERSION_LESS 3.1.0)
     message(FATAL_ERROR "-- Ceres requires Eigen version >= 3.1.0 in order "
       "that Eigen/SparseCore be available, detected version of Eigen is: "
-      "${EIGEN_VERSION}")
-  endif (EIGEN_VERSION VERSION_LESS 3.1.0)
+      "${EIGEN3_VERSION_STRING}")
+  endif (EIGEN3_VERSION VERSION_LESS 3.1.0)
 
-  message("-- Found Eigen version ${EIGEN_VERSION}: ${EIGEN_INCLUDE_DIRS}")
+  message("-- Found Eigen version ${EIGEN_VERSION_STRING}: ${EIGEN3_INCLUDE_DIRS}")
   # Ensure that only MPL2 licensed code is part of the default build.
   message("")
   message("   ===============================================================")
@@ -214,13 +222,13 @@ if (EIGEN_FOUND)
     message("   Ceres Solver as the Simplicial Cholesky factorization in Eigen")
     message("   is licensed under the LGPL. ")
 
-    if (EIGEN_VERSION VERSION_LESS 3.2.2)
+    if (EIGEN3_VERSION VERSION_LESS 3.2.2)
       message("   WARNING:")
       message("")
       message("   Your version of Eigen is older than version 3.2.2.")
       message("   The performance of SPARSE_NORMAL_CHOLESKY and SPARSE_SCHUR")
       message("   linear solvers will suffer. ")
-    endif (EIGEN_VERSION VERSION_LESS 3.2.2)
+    endif (EIGEN3_VERSION VERSION_LESS 3.2.2)
 
   else (EIGENSPARSE)
     message("   Disabling the use of Eigen as a sparse linear algebra library.")
@@ -230,7 +238,7 @@ if (EIGEN_FOUND)
   endif (EIGENSPARSE)
     message("   ===============================================================")
     message("")
-endif (EIGEN_FOUND)
+endif (EIGEN3_FOUND)
 
 # LAPACK (& BLAS).
 if (LAPACK)
@@ -384,6 +392,7 @@ else (MINIGLOG)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
   # Don't search with REQUIRED so that configuration continues if not found and
   # we can output an error messages explaining MINIGLOG option.
+  hunter_add_package(glog)
   find_package(Glog)
   if (NOT GLOG_FOUND)
     message(FATAL_ERROR "Can't find Google Log (glog). Please set either: "
@@ -504,11 +513,14 @@ if (CXX11)
   endif()
 endif(CXX11)
 
-include_directories(
-  include
-  internal
-  internal/ceres
-  ${GLOG_INCLUDE_DIRS})
+if(IOS)
+  include_directories(
+    include
+    internal
+    internal/ceres
+    ${GLOG_INCLUDE_DIRS})
+endif(IOS)
+
 # Eigen SparseQR generates various compiler warnings related to unused and
 # uninitialised local variables.  To avoid having to individually suppress these
 # warnings around the #include statments for Eigen headers across all GCC/Clang
@@ -518,7 +530,8 @@ include_directories(
 # Note that this is *not* propagated to clients, ie CERES_INCLUDE_DIRS
 # used by clients after find_package(Ceres) does not identify Eigen as
 # as system headers.
-include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
+
+# include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
 
 if (SUITESPARSE)
   include_directories(${SUITESPARSE_INCLUDE_DIRS})
@@ -851,11 +864,13 @@ configure_file("${CMAKE_SOURCE_DIR}/cmake/CeresConfig.cmake.in"
 install(FILES "${CMAKE_BINARY_DIR}/CeresConfig-install.cmake"
         RENAME CeresConfig.cmake
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+
 install(FILES "${CMAKE_BINARY_DIR}/CeresConfigVersion.cmake"
-              "${CMAKE_SOURCE_DIR}/cmake/FindEigen.cmake"
-              "${CMAKE_SOURCE_DIR}/cmake/FindGlog.cmake"
-              "${CMAKE_SOURCE_DIR}/cmake/FindGflags.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+
+              #"${CMAKE_SOURCE_DIR}/cmake/FindEigen.cmake"
+              #"${CMAKE_SOURCE_DIR}/cmake/FindGlog.cmake"
+              #"${CMAKE_SOURCE_DIR}/cmake/FindGflags.cmake"
 
 # Create an uninstall target to remove all installed files.
 configure_file("${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in"
