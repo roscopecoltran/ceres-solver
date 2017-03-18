@@ -268,7 +268,7 @@ else (CERES_USES_MINIGLOG)
 
   # Search quietly s/t we control the timing of the error message if not found.
   find_package(glog QUIET)
-  if (GLOG_FOUND)
+  if (glog_FOUND)
     message(STATUS "Found required Ceres dependency: glog")
   else (glog_FOUND)
     ceres_report_not_found("Missing required Ceres "
